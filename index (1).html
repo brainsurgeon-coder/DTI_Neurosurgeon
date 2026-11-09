@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DTI lab for neurosurgeons</title>
+<style>
+:root{--bg:#f4f3ee;--card:#ffffff;--fg:#222;--muted:#666;--line:#d8d6cc;--accent:#e07b00;--accent-fg:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#17171a;--card:#232327;--fg:#ececec;--muted:#a0a0a8;--line:#3a3a40;--accent:#f0932b;--accent-fg:#111;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17171a;--card:#232327;--fg:#ececec;--muted:#a0a0a8;--line:#3a3a40;--accent:#f0932b;--accent-fg:#111;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;justify-content:center;padding:16px}
+.wrap{width:100%;max-width:720px}
+h1{font-size:1.2rem;margin:4px 0 12px}
+.stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+canvas{display:block;width:100%;height:auto}
+.bar{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+button,select{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600;min-width:92px}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=range]{flex:1;min-width:140px;accent-color:var(--accent)}
+.scenes{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.scenes button{flex:1;min-width:110px;font-size:.85rem}
+.scenes button.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.hint{color:var(--muted);font-size:.8rem;margin-top:10px}
+#load{padding:60px 0;text-align:center;color:var(--muted)}
+.pg-sec{margin-top:28px;padding-top:18px;border-top:1px solid var(--line)}.pg-sec h2{font-size:1.1rem;margin:0 0 6px}
+.stats{display:flex;gap:8px;margin-top:10px}.stats div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}.stats b{display:block;font-size:1.3rem}.stats span{font-size:.75rem;color:var(--muted)}
+.note{margin-top:10px;padding:10px 12px;border-left:4px solid var(--accent);background:var(--card);border-radius:8px;font-size:.9rem;min-height:3.4em}
+#pgctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 16px}.ctl{margin-top:8px}.ctl label{display:flex;justify-content:space-between;font-size:.9rem}.ctl input{width:100%}.ctl small{color:var(--muted);font-size:.78rem;display:block}
+.opts label{font-size:.85rem;display:flex;gap:5px;align-items:center}
+
+video{display:block;width:100%;height:auto;background:#fbfbf8}
+h3.ex{font-size:1rem;margin:24px 0 6px}
+.qz{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px}
+.qq{margin:0 0 8px;font-weight:600;line-height:1.45}.qo{display:flex;flex-wrap:wrap;gap:8px}.qo button{text-align:left}
+.qo button.ok{border-color:#2ca02c;background:rgba(44,160,44,.16)}.qo button.bad{border-color:#d62728;background:rgba(214,40,40,.13)}
+.qf{margin-top:8px;font-size:.9rem;line-height:1.5}
+.scenes button.hit{border-color:#2ca02c}.scenes button.miss{border-color:#d62728}
+
+.intro{margin:4px 0 8px}.intro h2{font-size:1.15rem;margin:22px 0 8px}.intro p{line-height:1.55;margin:6px 0}
+.hero{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:12px;padding:14px 16px}
+.hero p{margin:4px 0;font-size:1rem}
+.cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:10px}
+.cmp figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+.cmp figcaption{font-size:.88rem;line-height:1.45;margin-top:6px}
+.cmp svg{width:100%;height:auto;display:block}
+.sv-box{fill:none;stroke:var(--line);stroke-width:2;stroke-dasharray:6 5}.sv-wall{stroke:#8b5a2b;stroke-width:7}
+.sv-el{fill:rgba(224,123,0,.2);stroke:var(--accent);stroke-width:2.5}.sv-ar{stroke:#2b7bd6;stroke-width:2.5;fill:none}.sv-d{fill:#2b7bd6}
+.sv-t{fill:var(--fg);font:12px system-ui,sans-serif}
+.pipe{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:8px;counter-reset:st}
+.pipe div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:.86rem;line-height:1.4;counter-increment:st}
+.pipe div::before{content:counter(st);display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;background:var(--accent);color:var(--accent-fg);font-weight:700;font-size:.8rem;margin-right:6px}
+.pipe b{display:block;margin:4px 0 2px}
+details.term{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-top:6px;padding:0 12px}
+details.term summary{cursor:pointer;padding:9px 0;font-weight:600}details.term p{margin:0 0 10px;font-size:.92rem}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px}.box h3{font-size:.98rem;margin:2px 0 6px}.box ul{margin:0;padding-left:18px}.box li{margin:4px 0;font-size:.9rem;line-height:1.45}
+.warn{border-left:5px solid #d62728}
+table.map{width:100%;border-collapse:collapse;margin-top:6px;font-size:.88rem;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+table.map td,table.map th{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.gobtn{display:inline-block;margin-top:10px;background:var(--accent);color:var(--accent-fg);padding:9px 16px;border-radius:10px;font-weight:600;text-decoration:none}
+
+.lab{margin-top:28px;padding-top:18px;border-top:1px solid var(--line)}.lab h2{font-size:1.1rem;margin:0 0 6px}
+.ctls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:4px 16px}
+nav.jump{display:flex;gap:6px 14px;flex-wrap:wrap;margin:0 0 10px}nav.jump a{color:var(--accent);font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>DTI lab for neurosurgeons</h1>
+<div class="hint" style="margin:0 0 12px">Interactive teaching labs on diffusion tensor imaging and tractography</div>
+
+<section class="intro" id="start">
+<div class="hero">
+<p><b>Start here: the basic idea in four sentences.</b></p>
+<p>1. Water in the brain moves randomly, and this is called <b>diffusion</b>. 2. In white matter, the walls of nerve fibres make water move <b>easily along</b> the fibre and <b>poorly across</b> it. 3. A special MRI (<b>DWI</b>) measures how freely water moves in many directions, and a <b>tensor</b> summarises this for every tiny cube (<b>voxel</b>) of brain. 4. <b>Tractography</b> follows the preferred direction from voxel to voxel to draw an estimate of the fibre pathway.</p>
+</div>
+
+<h2>The key picture: free water versus water inside a fibre</h2>
+<div class="cmp">
+<figure>
+<svg viewBox="0 0 300 190" role="img" aria-label="Water moving equally in all directions in free space">
+<rect class="sv-box" x="10" y="10" width="280" height="170" rx="6"/>
+<circle class="sv-el" cx="150" cy="95" r="52"/>
+<g class="sv-ar"><line x1="150" y1="95" x2="205" y2="95"/><line x1="150" y1="95" x2="95" y2="95"/><line x1="150" y1="95" x2="150" y2="40"/><line x1="150" y1="95" x2="150" y2="150"/><line x1="150" y1="95" x2="189" y2="56"/><line x1="150" y1="95" x2="111" y2="134"/><line x1="150" y1="95" x2="189" y2="134"/><line x1="150" y1="95" x2="111" y2="56"/></g>
+<circle class="sv-d" cx="60" cy="40" r="4"/><circle class="sv-d" cx="240" cy="150" r="4"/><circle class="sv-d" cx="70" cy="145" r="4"/><circle class="sv-d" cx="235" cy="45" r="4"/>
+<text class="sv-t" x="18" y="28">Free water (e.g. CSF)</text>
+</svg>
+<figcaption><b>A ball.</b> Water moves equally in every direction. There is no preferred direction, so there is nothing for tractography to follow.</figcaption>
+</figure>
+<figure>
+<svg viewBox="0 0 300 190" role="img" aria-label="Water moving mainly along a nerve fibre between two walls">
+<rect class="sv-box" x="10" y="10" width="280" height="170" rx="6"/>
+<line class="sv-wall" x1="10" y1="52" x2="290" y2="52"/><line class="sv-wall" x1="10" y1="138" x2="290" y2="138"/>
+<ellipse class="sv-el" cx="150" cy="95" rx="100" ry="22"/>
+<g class="sv-ar"><line x1="150" y1="95" x2="250" y2="95"/><line x1="150" y1="95" x2="50" y2="95"/></g>
+<circle class="sv-d" cx="70" cy="80" r="4"/><circle class="sv-d" cx="225" cy="108" r="4"/><circle class="sv-d" cx="120" cy="105" r="4"/><circle class="sv-d" cx="185" cy="82" r="4"/>
+<text class="sv-t" x="18" y="28">Inside a nerve fibre</text>
+</svg>
+<figcaption><b>A rugby ball.</b> The brown fibre walls block sideways movement, so water slides mostly along the fibre. The long axis of this shape is the fibre direction.</figcaption>
+</figure>
+</div>
+
+<h2>From scan to tract: the pipeline in six steps</h2>
+<div class="pipe">
+<div><b>Acquire</b>DWI scan: one b0 image plus many direction-weighted images</div>
+<div><b>Clean up</b>Correct motion and distortion, extract the brain</div>
+<div><b>Fit a model</b>A tensor (or a richer model such as CSD) in every voxel</div>
+<div><b>Read the maps</b>FA, MD and the colour-coded direction map</div>
+<div><b>Track</b>Seed regions, then follow the direction voxel to voxel</div>
+<div><b>Check</b>Overlay on T1, test other settings, correlate with the patient</div>
+</div>
+
+<h2>Key terms (tap to open)</h2>
+<details class="term"><summary>Diffusion and voxel</summary><p><b>Diffusion</b> is the random movement of water molecules. A <b>voxel</b> is one tiny cube of the 3D image, typically about 2 mm on a side, and each voxel gets its own measurement.</p></details>
+<details class="term"><summary>b0 image and b-value</summary><p>The <b>b0</b> image is a scan with no diffusion weighting: the "before" picture. The <b>b-value</b> (s/mm²) is the sensitivity dial. About 1000 is standard for DTI. Higher values are more sensitive to diffusion but noisier.</p></details>
+<details class="term"><summary>Gradient directions</summary><p>Each diffusion-weighted image tests water movement along one direction. DTI needs at least 6, and 30 or more are used in practice so that noise averages out. Lab 3 below shows why.</p></details>
+<details class="term"><summary>Tensor, λ1 and v1</summary><p>The <b>tensor</b> is a 3×3 table that describes the diffusion shape in a voxel, like a ball or a rugby ball. Its three <b>eigenvalues</b> (λ1 ≥ λ2 ≥ λ3) are the diffusion along its three natural axes, and <b>v1</b>, the direction of the largest one, is the presumed fibre direction.</p></details>
+<details class="term"><summary>FA (fractional anisotropy)</summary><p>How directional the diffusion is, from 0 (a perfect ball) to 1 (a needle). Healthy white matter is high, grey matter lower, CSF near zero. FA also falls with edema, infiltration and damage.</p></details>
+<details class="term"><summary>MD (mean diffusivity)</summary><p>The average diffusion in all directions, meaning how freely water moves overall. It is raised in edema and necrosis and reduced in densely cellular tissue.</p></details>
+<details class="term"><summary>Colour-coded direction map</summary><p>The standard colours: <b style="color:#d62728">red</b> = left-right (e.g. corpus callosum), <b style="color:#2ca02c">green</b> = front-back (e.g. cingulum), <b style="color:#1f77b4">blue</b> = up-down (e.g. corticospinal tract). Wrong colours are a quick sign of flipped gradient axes.</p></details>
+<details class="term"><summary>Tractography, seed, ROI</summary><p><b>Tractography</b> links voxel directions into streamlines. A <b>seed</b> is where tracking starts, and an <b>ROI</b> (region of interest) is a region used to start, include or exclude streamlines. Streamlines are estimates of fibre pathways, not actual axons.</p></details>
+<details class="term"><summary>Crossing fibres and CSD</summary><p>In many voxels two or more bundles cross. A single tensor cannot represent this, so it gives a muddled direction. <b>CSD</b> and other multi-fibre models estimate several directions per voxel and handle crossings better, but they need better data (more directions, higher b-values).</p></details>
+
+<h2>Know the limits before you trust a tract</h2>
+<div class="cols">
+<div class="box warn"><h3>⚠️ Common pitfalls</h3><ul>
+<li><b>A missing tract is not proof of missing fibres.</b> Edema and infiltration lower FA, so tracking stops early.</li>
+<li><b>A clean tract is not proof of function.</b> It shows structure, not whether the fibres still work.</li>
+<li><b>Settings change the answer.</b> Always check a stricter and a looser threshold.</li>
+<li><b>Distortion and misregistration</b> can shift tracts by millimetres.</li>
+<li><b>Brain shift</b> after craniotomy makes pre-operative tracts less accurate.</li></ul></div>
+<div class="box"><h3>✅ How to use this page</h3><ul>
+<li>Go through the four labs in order. Each one builds on the one before.</li>
+<li>In every lab, <b>change one slider at a time</b> and read the note under the picture.</li>
+<li>Finish with the playground, where all the ideas combine.</li>
+<li>It is a <b>simplified 2D model</b>. Real data are 3D and noisier.</li></ul></div>
+</div>
+
+<h2>What each lab teaches</h2>
+<table class="map">
+<tr><th>Lab</th><th>Question it answers</th></tr>
+<tr><td><a href="#lab1">1 Tensor</a></td><td>What does the ball or rugby-ball shape mean, and how do FA and MD come from it?</td></tr>
+<tr><td><a href="#lab2">2 Scan angle</a></td><td>How does the scan direction (and b-value) change the signal we measure?</td></tr>
+<tr><td><a href="#lab3">3 Directions</a></td><td>Why do we need many scan directions and how does noise matter?</td></tr>
+<tr><td><a href="#playground">4 Tractography</a></td><td>How do settings such as the FA threshold and angle change the tract?</td></tr>
+<tr><td><a href="#test">5 Test yourself</a></td><td>Can you find the corticospinal tract on axial slices, fix a bad tract, and spot the pitfalls?</td></tr>
+</table>
+<a class="gobtn" href="#lab1">Start Lab 1 ↓</a>
+<p style="font-size:.82rem;color:var(--muted);margin-top:14px">Educational, simulated material only. Not for clinical decisions.</p>
+</section>
+
+
+<nav class="jump"><a href="#start">Start here</a><a href="#lab1">1 Tensor</a><a href="#lab2">2 Scan angle</a><a href="#lab3">3 Many directions</a><a href="#playground">4 Tractography</a><a href="#test">5 Test yourself</a></nav>
+<h2 style="font-size:1.15rem;margin:26px 0 4px">The four hands-on labs</h2><div class="hint" style="margin:0 0 6px">All run in your browser. Simulated 2D teaching models only, not for clinical decisions.</div>
+
+<section class="lab" id="lab1"><h2>1 · Tensor lab: shape, direction, FA and MD</h2>
+<div class="hint" style="margin:0 0 10px">The dots are water molecules. Change λ1 and λ2 and watch the shape and the wandering change, or tap a tissue preset.</div>
+<div class="stage"><canvas id="l1c" width="700" height="420"></canvas></div>
+<div class="stats" id="l1st"></div><div class="note" id="l1note" aria-live="polite"></div>
+<div class="bar" id="l1pre"></div><div class="ctls" id="l1ctl"></div></section>
+
+<section class="lab" id="lab2"><h2>2 · Scan angle lab: how the scan direction changes the signal</h2>
+<div class="hint" style="margin:0 0 10px">Rotate the green scan direction (or press Sweep). Scanning along the fibre loses signal; scanning across keeps it. Set the b-value to 0 and the contrast vanishes.</div>
+<div class="stage"><canvas id="l2c" width="700" height="380"></canvas></div>
+<div class="note" id="l2note" aria-live="polite"></div>
+<div class="bar"><button id="l2sw" class="primary">Sweep</button></div><div class="ctls" id="l2ctl"></div></section>
+
+<section class="lab" id="lab3"><h2>3 · How many scan directions do you need?</h2>
+<div class="hint" style="margin:0 0 10px">Each blue dot is one measured direction. The orange shape is fitted to the dots, and the red line is the fibre direction it finds. Compare with the true direction (green dashed).</div>
+<div class="stage"><canvas id="l3c" width="700" height="420"></canvas></div>
+<div class="stats" id="l3st"></div><div class="note" id="l3note" aria-live="polite"></div>
+<div class="bar"><button id="l3roll">Re-roll noise</button></div><div class="ctls" id="l3ctl"></div></section>
+
+<section class="pg-sec" id="playground">
+<h2>4 · Tractography parameter playground: why one picture is never the whole truth</h2>
+<div class="hint" style="margin:0 0 10px">A schematic 2D model: a vertical “corticospinal-like” bundle (brainstem at the bottom, cortex at the top) crossed by a horizontal bundle. <b>Drag on the picture to move the seed.</b> For teaching only, not for clinical decisions.</div>
+<div class="stage" style="background:#1b1b1f"><canvas id="pg"></canvas></div>
+<div class="stats" id="pgstat"></div>
+<div class="note" id="pghint" aria-live="polite"></div>
+<div class="bar"><button id="b_strict">Strict</button><button id="b_typ">Typical</button><button id="b_loose">Loose</button><button id="b_pin">Pin this result</button><button id="b_unpin">Clear pin</button></div>
+<div class="bar"><button id="b_cst">Seed in tract</button><button id="b_x">Seed in crossing</button><button id="b_bg">Seed in noise</button><button id="b_roll">Re-roll noise</button></div>
+<div id="pgctl"></div>
+<div class="bar opts"><label><input type="radio" name="pgm" id="m_det" checked> Deterministic</label><label><input type="radio" name="pgm" id="m_prob"> Probabilistic</label><label><input type="checkbox" id="o_fa" checked> FA map</label><label><input type="checkbox" id="o_dir"> Direction ticks</label><label><input type="checkbox" id="o_truth" checked> True anatomy</label></div>
+<div class="hint">Tip: press <b>Pin this result</b>, change one slider, and compare the new tract (colour) with the pinned one (grey).</div>
+</section>
+
+<section class="lab" id="test"><h2>5 · Test yourself</h2>
+<div class="hint" style="margin:0 0 8px">Three short exercises. Answers come with a short explanation. The slice drawings are <b>schematic teaching diagrams</b>, not an atlas, and real anatomy varies. Not for clinical decisions.</div>
+<div class="note" id="t_sum" aria-live="polite"></div>
+
+<h3 class="ex">Exercise 1 · Find the corticospinal tract on five axial slices</h3>
+<div class="hint" style="margin:0 0 8px">Pick a level, then <b>click where the corticospinal tract (CST) runs</b>. It is on both sides, so either side counts. Hide the labels for a harder version.</div>
+<div class="scenes" id="cst_tabs"></div>
+<div class="stage" style="margin-top:10px"><canvas id="cst_c" width="600" height="420" style="cursor:crosshair;touch-action:manipulation"></canvas></div>
+<div class="note" id="cst_msg" aria-live="polite"></div>
+<div class="bar opts"><label><input type="checkbox" id="cst_lab" checked> Show structure labels</label><button id="cst_rev">Reveal answer</button><button id="cst_retry">Try this level again</button><button id="cst_all">Reset exercise</button></div>
+
+<h3 class="ex">Exercise 2 · What went wrong?</h3>
+<div class="hint" style="margin:0 0 4px">Six situations you may meet in practice. Choose the best response.</div>
+<div id="ex2"></div>
+
+<h3 class="ex">Exercise 3 · True or false</h3>
+<div id="ex3"></div>
+<div class="bar"><button id="t_reset">Reset all exercises</button></div>
+</section>
+
+</div>
+<script>
+
+function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gsR(R){return Math.sqrt(-2*Math.log(R()+1e-9))*Math.cos(6.283*R())}
+function mkCtl(el,defs,S,cb){const upd=()=>defs.forEach(d=>{document.getElementById(el.id+"_"+d.k).value=S[d.k];document.getElementById(el.id+"_v_"+d.k).textContent=+(+S[d.k]).toFixed(2)});
+defs.forEach(d=>{S[d.k]=d.v;const w=document.createElement("div");w.className="ctl";w.innerHTML=`<label for="${el.id}_${d.k}"><span>${d.t}</span><b id="${el.id}_v_${d.k}"></b></label><input type="range" id="${el.id}_${d.k}" min="${d.min}" max="${d.max}" step="${d.st}" value="${d.v}">${d.h?`<small>${d.h}</small>`:""}`;el.appendChild(w);w.querySelector("input").oninput=e=>{S[d.k]=+e.target.value;document.getElementById(el.id+"_v_"+d.k).textContent=+(+S[d.k]).toFixed(2);cb(d.k)}});upd();return upd}
+function arr(g,x0,y0,x1,y1,col,w,both){g.strokeStyle=col;g.fillStyle=col;g.lineWidth=w;g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke();const h=(x,y,ax,ay)=>{const a=Math.atan2(ay-y,ax-x);g.beginPath();g.moveTo(ax,ay);g.lineTo(ax-11*Math.cos(a-.4),ay-11*Math.sin(a-.4));g.lineTo(ax-11*Math.cos(a+.4),ay-11*Math.sin(a+.4));g.closePath();g.fill()};h(x0,y0,x1,y1);if(both)h(x1,y1,x0,y0)}
+const BG="#fbfbf8";
+
+/* Lab 1: tensor */
+(function(){
+const $=id=>document.getElementById(id),c=$("l1c"),g=c.getContext("2d"),U=110,CX=350,CY=210,BX=1.5,BY=1.1,N=70,S={};
+let P=Array.from({length:N},()=>[(Math.random()*2-1)*BX,(Math.random()*2-1)*BY]),H=[];const R=mul(5);
+const fa=(a,b)=>{const m=(a+2*b)/3;return Math.sqrt(1.5*((a-m)**2+2*(b-m)**2)/(a*a+2*b*b))};
+const up=mkCtl($("l1ctl"),[{k:"l1",t:"λ1: diffusion in the easy direction",min:.3,max:3,st:.1,v:1.7},{k:"l2",t:"λ2 = λ3: diffusion in the hard directions",min:.1,max:3,st:.1,v:.4},{k:"ang",t:"Fibre direction (°)",min:0,max:180,st:1,v:0}],S,k=>{if(k==="l1"&&S.l2>S.l1)S.l2=S.l1;if(k==="l2"&&S.l2>S.l1)S.l1=S.l2;up();info()});
+[["CSF",3,3],["Grey matter",.9,.8],["Healthy white matter",1.7,.4],["Edema",2.2,1.4],["Tumour infiltration",1.3,.9]].forEach(([n,a,b])=>{const e=document.createElement("button");e.textContent=n;e.onclick=()=>{S.l1=a;S.l2=b;up();info()};$("l1pre").appendChild(e)});
+function info(){const f=fa(S.l1,S.l2),md=(S.l1+2*S.l2)/3,a=S.ang*Math.PI/180,r=Math.round(60+195*Math.abs(Math.cos(a))),bl=Math.round(60+195*Math.abs(Math.sin(a)));
+$("l1st").innerHTML=`<div><b>${f.toFixed(2)}</b><span>FA (0 = ball, 1 = needle)</span></div><div><b>${md.toFixed(2)}</b><span>MD (×10⁻³ mm²/s)</span></div><div><b style="color:rgb(${r},90,${bl})">■</b><span>colour-map colour</span></div>`;
+$("l1note").textContent=f<.1?"Ball-like: water moves about equally in every direction (CSF, or tissue where the fibres are destroyed). There is no direction for tractography to follow.":f<.3?"Weakly directional (grey matter, edema, infiltrated white matter). Tractography often stops here, so a missing tract does not prove the fibres are gone.":"Strongly directional: an intact bundle. Tractography can follow v1 from voxel to voxel."}
+function frame(){const a=S.ang*Math.PI/180,cs=Math.cos(a),sn=Math.sin(a),s1=.045*Math.sqrt(S.l1),s2=.045*Math.sqrt(S.l2);
+for(const p of P){const n1=gsR(R)*s1,n2=gsR(R)*s2;p[0]+=n1*cs-n2*sn;p[1]+=n1*sn+n2*cs;if(p[0]>BX)p[0]=2*BX-p[0];if(p[0]<-BX)p[0]=-2*BX-p[0];if(p[1]>BY)p[1]=2*BY-p[1];if(p[1]<-BY)p[1]=-2*BY-p[1];p[0]=Math.max(-BX,Math.min(BX,p[0]));p[1]=Math.max(-BY,Math.min(BY,p[1]))}
+H.push(P.map(p=>[p[0],p[1]]));if(H.length>5)H.shift();
+g.fillStyle=BG;g.fillRect(0,0,700,420);g.strokeStyle="#999";g.lineWidth=2;g.setLineDash([7,5]);g.strokeRect(CX-BX*U,CY-BY*U,2*BX*U,2*BY*U);g.setLineDash([]);
+g.fillStyle="#888";g.font="12px system-ui,sans-serif";g.fillText("one voxel (a tiny cube of brain)",CX-BX*U,CY+BY*U+18);
+g.beginPath();g.ellipse(CX,CY,.4*S.l1*U,.4*S.l2*U,a,0,6.283);g.fillStyle="rgba(255,153,51,.22)";g.fill();g.strokeStyle="#e07b00";g.lineWidth=3;g.stroke();
+H.forEach((h,k)=>{g.fillStyle=`rgba(43,123,214,${.1+.12*k})`;h.forEach(p=>{g.beginPath();g.arc(CX+p[0]*U,CY+p[1]*U,2+k*.4,0,6.283);g.fill()})});
+g.fillStyle="#1b5fb0";P.forEach(p=>{g.beginPath();g.arc(CX+p[0]*U,CY+p[1]*U,3.4,0,6.283);g.fill()});
+arr(g,CX,CY,CX+.4*S.l1*U*cs,CY+.4*S.l1*U*sn,"#d62728",3);arr(g,CX,CY,CX-.4*S.l2*U*sn,CY+.4*S.l2*U*cs,"#1f77b4",3);
+g.font="bold 13px system-ui,sans-serif";g.fillStyle="#d62728";g.fillText("λ1 / v1 (easy)",CX+.4*S.l1*U*cs+8,CY+.4*S.l1*U*sn-8);g.fillStyle="#1f77b4";g.fillText("λ2 (hard)",CX-.4*S.l2*U*sn+8,CY+.4*S.l2*U*cs+14);
+requestAnimationFrame(frame)}
+info();frame();
+})();
+
+/* Lab 2: scan angle */
+(function(){
+const $=id=>document.getElementById(id),c=$("l2c"),g=c.getContext("2d"),L1=1.7,L2=.4,S={};let sweep=false;
+const up=mkCtl($("l2ctl"),[{k:"fib",t:"Fibre direction (°)",min:0,max:180,st:1,v:0},{k:"scan",t:"Scan direction (°)",min:0,max:180,st:1,v:0},{k:"b",t:"b-value (s/mm²): the sensitivity dial",min:0,max:3000,st:100,v:1000,h:"0 = no diffusion weighting. About 1000 is standard for DTI."}],S,()=>{});
+const adc=p=>{const d=p-S.fib*Math.PI/180;return L1*Math.cos(d)**2+L2*Math.sin(d)**2},sig=p=>Math.exp(-S.b/1000*adc(p));
+$("l2sw").onclick=()=>{sweep=!sweep;$("l2sw").textContent=sweep?"Stop sweep":"Sweep"};
+function frame(){if(sweep){S.scan=(S.scan+.6)%180;up()}
+const f=S.fib*Math.PI/180,p=S.scan*Math.PI/180,s=sig(p),cx=150,cy=190;
+g.fillStyle=BG;g.fillRect(0,0,700,380);
+g.save();g.beginPath();g.rect(cx-120,cy-120,240,240);g.clip();g.translate(cx,cy);g.rotate(f);g.strokeStyle="#8b5a2b";g.lineWidth=7;[-70,70].forEach(y=>{g.beginPath();g.moveTo(-200,y);g.lineTo(200,y);g.stroke()});g.restore();
+g.strokeStyle="#999";g.lineWidth=2;g.setLineDash([7,5]);g.strokeRect(cx-120,cy-120,240,240);g.setLineDash([]);
+g.beginPath();g.ellipse(cx,cy,90,90*L2/L1,f,0,6.283);g.fillStyle="rgba(255,153,51,.25)";g.fill();g.strokeStyle="#e07b00";g.lineWidth=2.5;g.stroke();
+arr(g,cx-105*Math.cos(p),cy-105*Math.sin(p),cx+105*Math.cos(p),cy+105*Math.sin(p),"#1f9d55",4,true);
+g.font="12px system-ui,sans-serif";g.fillStyle="#1f9d55";g.fillText("green = scan direction",cx-65,cy+142);g.fillStyle="#8b5a2b";g.fillText("brown = fibre walls",cx-60,cy-128);
+g.fillStyle="#333";g.font="12px system-ui,sans-serif";g.textAlign="center";g.fillText("voxel brightness",355,128);g.textAlign="left";
+const gr=Math.round(255*s);g.fillStyle=`rgb(${gr},${gr},${gr})`;g.fillRect(300,140,110,110);g.strokeStyle="#555";g.lineWidth=2;g.strokeRect(300,140,110,110);
+g.textAlign="center";g.font="bold 14px system-ui,sans-serif";g.fillStyle="#333";g.fillText("signal = "+s.toFixed(2),355,275);g.textAlign="left";
+const x0=480,x1=670,y0=300,y1=70,ym=v=>y0-(y0-y1)*v;g.strokeStyle="#555";g.lineWidth=1.8;g.beginPath();g.moveTo(x0,y1-10);g.lineTo(x0,y0);g.lineTo(x1,y0);g.stroke();
+g.beginPath();for(let a=0;a<=180;a++){const q=a*Math.PI/180,x=x0+(x1-x0)*a/180,y=ym(sig(q));a?g.lineTo(x,y):g.moveTo(x,y)}g.strokeStyle="#e07b00";g.lineWidth=3;g.stroke();
+g.fillStyle="#1f9d55";g.beginPath();g.arc(x0+(x1-x0)*S.scan/180,ym(s),7,0,6.283);g.fill();
+g.fillStyle="#444";g.font="11px system-ui,sans-serif";g.fillText("0°",x0-6,y0+16);g.fillText("90°",(x0+x1)/2-10,y0+16);g.fillText("180°",x1-14,y0+16);g.fillText("scan direction",(x0+x1)/2-34,y0+34);g.font="bold 12px system-ui,sans-serif";g.fillText("signal vs scan direction",x0,y1-20);
+let d=Math.abs(S.scan-S.fib)%180;d=Math.min(d,180-d);
+$("l2note").textContent=S.b===0?"With b = 0 the scanner is not sensitised to diffusion, so every direction looks the same. This is the b0 image.":d<20?"The scan runs ALONG the fibre: water escapes freely in that direction, so the signal drops and the voxel looks dark.":d>70?"The scan runs ACROSS the fibre: the fibre walls hold the water in, so the signal stays bright.":"In between: partial signal loss. Measuring from many angles reveals the fibre direction.";
+requestAnimationFrame(frame)}
+frame();
+})();
+
+/* Lab 3: how many directions */
+(function(){
+const $=id=>document.getElementById(id),c=$("l3c"),g=c.getContext("2d"),A=25*Math.PI/180,L1=1.7,L2=.4,PS=80,CX=350,CY=210,S={};
+const ca=Math.cos(A),sa=Math.sin(A),DT=[[L1*ca*ca+L2*sa*sa,(L1-L2)*ca*sa],[(L1-L2)*ca*sa,L1*sa*sa+L2*ca*ca]];
+const ANG=Array.from({length:60},(_,k)=>(k*.618*Math.PI)%Math.PI),tru=a=>{const x=Math.cos(a),y=Math.sin(a);return DT[0][0]*x*x+2*DT[0][1]*x*y+DT[1][1]*y*y};
+let seed=3,NZ=[];const roll=()=>{const R=mul(seed++*131);NZ=Array.from({length:60},()=>gsR(R))};
+function fit(n,m){const a=[0,0,0,0,0,0];let Ata=[[0,0,0],[0,0,0],[0,0,0]],Atb=[0,0,0];
+for(let k=0;k<n;k++){const x=Math.cos(ANG[k]),y=Math.sin(ANG[k]),r=[x*x,2*x*y,y*y];for(let i=0;i<3;i++){Atb[i]+=r[i]*m[k];for(let j=0;j<3;j++)Ata[i][j]+=r[i]*r[j]}}
+const M=Ata.map((r,i)=>[...r,Atb[i]]);for(let i=0;i<3;i++){let p=i;for(let r=i+1;r<3;r++)if(Math.abs(M[r][i])>Math.abs(M[p][i]))p=r;[M[i],M[p]]=[M[p],M[i]];const d=M[i][i]||1e-9;for(let j=i;j<4;j++)M[i][j]/=d;for(let r=0;r<3;r++)if(r!==i){const f=M[r][i];for(let j=i;j<4;j++)M[r][j]-=f*M[i][j]}}
+const dxx=M[0][3],dxy=M[1][3],dyy=M[2][3],mm=(dxx+dyy)/2,rr=Math.hypot((dxx-dyy)/2,dxy),w1=Math.max(mm+rr,.05),w2=Math.max(mm-rr,.05),th=.5*Math.atan2(2*dxy,dxx-dyy),c2=Math.cos(th),s2=Math.sin(th);
+return{D:[[w1*c2*c2+w2*s2*s2,(w1-w2)*c2*s2],[(w1-w2)*c2*s2,w1*s2*s2+w2*c2*c2]],th}}
+const dif=th=>{let d=Math.abs(th-A)%Math.PI;return Math.min(d,Math.PI-d)*180/Math.PI};
+const meas=(n,z,R)=>Array.from({length:n},(_,k)=>tru(ANG[k])+z*(R?gsR(R):NZ[k]));
+function typ(n,z){const R=mul(99);let t=0;for(let i=0;i<60;i++)t+=dif(fit(n,meas(n,z,R)).th);return t/60}
+const up=mkCtl($("l3ctl"),[{k:"n",t:"Number of scan directions",min:3,max:60,st:1,v:6},{k:"z",t:"Image noise",min:0,max:.6,st:.02,v:.25}],S,()=>draw());
+$("l3roll").onclick=()=>{roll();draw()};
+function draw(){const n=S.n,m=meas(n,S.z),F=fit(n,m),th=F.th;
+g.fillStyle=BG;g.fillRect(0,0,700,420);
+const curve=(D,fill,col,lw,dash)=>{g.beginPath();for(let i=0;i<=180;i++){const p=i*Math.PI/90,x=Math.cos(p),y=Math.sin(p),r=(D[0][0]*x*x+2*D[0][1]*x*y+D[1][1]*y*y)*PS;i?g.lineTo(CX+r*x,CY+r*y):g.moveTo(CX+r*x,CY+r*y)}g.closePath();if(fill){g.fillStyle=fill;g.fill()}g.strokeStyle=col;g.lineWidth=lw;g.setLineDash(dash||[]);g.stroke();g.setLineDash([])};
+curve(DT,null,"#999",1.5,[6,5]);
+for(let k=0;k<n;k++){const x=Math.cos(ANG[k]),y=Math.sin(ANG[k]),r=m[k]*PS;g.strokeStyle="#c8d6e6";g.lineWidth=1;g.beginPath();g.moveTo(CX-r*x,CY-r*y);g.lineTo(CX+r*x,CY+r*y);g.stroke();g.fillStyle="#1f77b4";[1,-1].forEach(s=>{g.beginPath();g.arc(CX+s*r*x,CY+s*r*y,3.5,0,6.283);g.fill()})}
+curve(F.D,"rgba(255,153,51,.22)","#e07b00",3);
+arr(g,CX-170*Math.cos(th),CY-170*Math.sin(th),CX+170*Math.cos(th),CY+170*Math.sin(th),"#d62728",2.5,true);
+g.strokeStyle="#1f9d55";g.lineWidth=2;g.setLineDash([8,6]);g.beginPath();g.moveTo(CX-190*ca,CY-190*sa);g.lineTo(CX+190*ca,CY+190*sa);g.stroke();g.setLineDash([]);
+g.font="12px system-ui,sans-serif";g.fillStyle="#d62728";g.fillText("fitted v1",CX+150*Math.cos(th)+8,CY+150*Math.sin(th)-8);g.fillStyle="#1f9d55";g.fillText("true direction",CX-190*ca-4,CY-190*sa-8);g.fillStyle="#888";g.fillText("grey dashed = true diffusion shape",12,408);
+const e=dif(th),t=typ(n,S.z);
+$("l3st").innerHTML=`<div><b>${n}</b><span>directions measured</span></div><div><b>${e.toFixed(1)}°</b><span>direction error, this scan</span></div><div><b>${t.toFixed(1)}°</b><span>typical error (average of 60 scans)</span></div>`;
+$("l3note").textContent=n<6?"Very few directions: the fit is barely constrained, so the fibre direction can be far off.":n<20?"Better, but a single noisy measurement can still tilt the result. Increase the noise to see how fragile this is.":"With many directions the noise averages out and the direction is steady. Real DTI scans use 30 or more."}
+roll();draw();
+})();
+
+(function(){
+const W=40,H=28,S=18,cv=document.getElementById("pg"),g=cv.getContext("2d");cv.width=W*S;cv.height=H*S;
+const $=id=>document.getElementById(id);
+function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const gsR=R=>Math.sqrt(-2*Math.log(R()+1e-9))*Math.cos(6.283*R());
+const cxA=y=>20+4*Math.sin(y/H*Math.PI*1.2);
+function uA(y){const t=y/H*Math.PI*1.2,dx=4*Math.cos(t)*Math.PI*1.2/H,n=Math.hypot(dx,1);return[dx/n,1/n]}
+const FA0=new Float32Array(W*H),AN0=new Float32Array(W*H);
+for(let j=0;j<H;j++)for(let i=0;i<W;i++){const x=i+.5,y=j+.5,da=x-cxA(y),ga=Math.exp(-da*da/8),gb=Math.exp(-(y-14)*(y-14)/5.8),u=uA(y),wa=.75*ga,wb=.45*gb;
+const a=.2+wa*u[0]*u[0]+wb,b=wa*u[0]*u[1],c=.2+wa*u[1]*u[1],m=(a+c)/2,r=Math.hypot((a-c)/2,b),l1=m+r,l2=m-r;
+FA0[j*W+i]=Math.SQRT2*Math.sqrt((l1-m)**2+(l2-m)**2)/Math.sqrt(l1*l1+l2*l2);AN0[j*W+i]=.5*Math.atan2(2*b,a-c)}
+const FAx=(i=>Math.min(FA0[13*W+i],FA0[14*W+i]))(Math.floor(cxA(14)));
+const PR=[
+{k:"fa",t:"FA threshold",min:.02,max:.5,st:.01,v:.18,h:"Stops tracking where the arrow is too weak. Too high: tract cut short. Too low: wanders into noise."},
+{k:"ang",t:"Max turning angle (°)",min:10,max:90,st:1,v:45,h:"Sharpest corner allowed per step. Too low: misses curves. Too high: jumps onto other bundles."},
+{k:"step",t:"Step size (voxels)",min:.2,max:1.5,st:.1,v:.5,h:"Smaller is smoother but slower. Large steps cut corners."},
+{k:"n",t:"Number of seeds",min:10,max:400,st:10,v:120,h:"More seeds fill out the bundle, and any leaks."},
+{k:"r",t:"Seed radius (voxels)",min:.5,max:6,st:.5,v:1.5,h:"Size of the start region. Too big: picks up neighbouring bundles."},
+{k:"len",t:"Minimum length (voxels)",min:0,max:40,st:1,v:12,h:"Drops short fragments. Too high: throws away real parts."},
+{k:"noise",t:"Image noise",min:0,max:.6,st:.02,v:.12,h:"Real scans are noisy. High noise makes directions unreliable."}];
+const P={prob:false,cx:cxA(23),cy:23};PR.forEach(p=>P[p.k]=p.v);
+PR.forEach(p=>{const d=document.createElement("div");d.className="ctl";d.innerHTML=`<label for="s_${p.k}"><span>${p.t}</span><b id="v_${p.k}"></b></label><input type="range" id="s_${p.k}" min="${p.min}" max="${p.max}" step="${p.st}" value="${p.v}"><small>${p.h}</small>`;$("pgctl").appendChild(d);d.querySelector("input").oninput=e=>{P[p.k]=+e.target.value;go()}});
+function sync(){PR.forEach(p=>{$("s_"+p.k).value=P[p.k];$("v_"+p.k).textContent=+(+P[p.k]).toFixed(2)})}
+let seedv=5,FA=new Float32Array(W*H),AN=new Float32Array(W*H),NA=[],NF=[],SL=[],pinned=[],stat={n:0,top:0,leak:0},q=0;
+function reroll(){const r=mul(seedv++*7919+13);NA=Array.from({length:W*H},()=>gsR(r));NF=Array.from({length:W*H},()=>gsR(r))}
+function field(){const z=P.noise;for(let k=0;k<W*H;k++){FA[k]=Math.min(1,Math.max(0,FA0[k]+z*.18*NF[k]));AN[k]=AN0[k]+z*NA[k]*(.25+1.2*(1-FA0[k]))}}
+function track(x,y,dx,dy,R){const pts=[],mx=Math.cos(P.ang*Math.PI/180);
+for(let n=0;n<500;n++){const i=Math.floor(x),j=Math.floor(y);if(i<0||j<0||i>=W||j>=H)break;const k=j*W+i;if(FA[k]<P.fa)break;
+let ex=Math.cos(AN[k]),ey=Math.sin(AN[k]);if(ex*dx+ey*dy<0){ex=-ex;ey=-ey}
+if(P.prob){let ok=false;for(let t=0;t<4&&!ok;t++){const s=(.5*(1-FA[k])+.05)*gsR(R),c=Math.cos(s),sn=Math.sin(s),fx=ex*c-ey*sn,fy=ex*sn+ey*c;if(fx*dx+fy*dy>=mx){ex=fx;ey=fy;ok=true}}if(!ok)break}
+else if(ex*dx+ey*dy<mx)break;
+x+=ex*P.step;y+=ey*P.step;dx=ex;dy=ey;pts.push([x,y])}
+return pts}
+function compute(){const R=mul(777),out=[];
+for(let n=0;n<P.n;n++){const rr=P.r*Math.sqrt(R()),th=6.283*R(),x=P.cx+rr*Math.cos(th),y=P.cy+rr*Math.sin(th),i=Math.floor(x),j=Math.floor(y);if(i<0||j<0||i>=W||j>=H)continue;
+const k=j*W+i,dx=Math.cos(AN[k]),dy=Math.sin(AN[k]),f=track(x,y,dx,dy,R),b=track(x,y,-dx,-dy,R),line=b.reverse().concat([[x,y]],f);
+if(line.length>1&&line.length*P.step>=P.len)out.push(line)}
+SL=out;let top=0,leak=0;out.forEach(l=>{if(l.some(p=>p[1]<2.5))top++;if(l.some(p=>Math.abs(p[0]-cxA(p[1]))>4.5))leak++});
+stat={n:out.length,top:out.length?100*top/out.length:0,leak:out.length?100*leak/out.length:0}}
+function col(l){let sx=0,sy=0;for(let i=1;i<l.length;i++){sx+=Math.abs(l[i][0]-l[i-1][0]);sy+=Math.abs(l[i][1]-l[i-1][1])}const m=Math.max(sx,sy,1e-6);return`rgb(${Math.round(60+195*sx/m)},90,${Math.round(60+195*sy/m)})`}
+function path(l){g.beginPath();l.forEach((p,i)=>i?g.lineTo(p[0]*S,p[1]*S):g.moveTo(p[0]*S,p[1]*S));g.stroke()}
+function draw(){const showFA=$("o_fa").checked;
+for(let j=0;j<H;j++)for(let i=0;i<W;i++){const f=FA[j*W+i]*255|0;g.fillStyle=showFA?`rgb(${f},${f},${f})`:"#1b1b1f";g.fillRect(i*S,j*S,S,S)}
+if($("o_dir").checked){g.lineWidth=2;for(let j=0;j<H;j++)for(let i=0;i<W;i++){const k=j*W+i,f=FA[k];if(f<.12)continue;const a=AN[k],l=S*.42*Math.min(1,f/.8),cx=(i+.5)*S,cy=(j+.5)*S;g.strokeStyle=`rgb(${60+195*Math.abs(Math.cos(a))|0},90,${60+195*Math.abs(Math.sin(a))|0})`;g.beginPath();g.moveTo(cx-l*Math.cos(a),cy-l*Math.sin(a));g.lineTo(cx+l*Math.cos(a),cy+l*Math.sin(a));g.stroke()}}
+const tr=$("o_truth").checked;g.font="12px system-ui,sans-serif";g.fillStyle="rgba(255,255,255,.85)";
+if(tr){g.setLineDash([6,5]);g.strokeStyle="rgba(255,255,255,.55)";g.lineWidth=1.5;[-3,3].forEach(o=>{g.beginPath();for(let y=0;y<=H;y+=.5){const x=cxA(y)+o;y?g.lineTo(x*S,y*S):g.moveTo(x*S,y*S)}g.stroke()});[11.4,16.6].forEach(y=>{g.beginPath();g.moveTo(0,y*S);g.lineTo(W*S,y*S);g.stroke()});g.setLineDash([]);g.fillText("crossing bundle",W*S-100,11*S)}
+g.fillText("motor cortex (target)",8,15);g.fillText("brainstem",8,H*S-8);
+g.lineWidth=1.2;g.strokeStyle="rgba(170,190,200,.6)";pinned.forEach(path);
+g.lineWidth=P.prob?1.2:1.8;g.globalAlpha=P.prob?.22:.9;SL.forEach(l=>{g.strokeStyle=col(l);path(l)});g.globalAlpha=1;
+g.strokeStyle="#ffd84a";g.fillStyle="#ffd84a";g.lineWidth=2;g.setLineDash([4,3]);g.beginPath();g.arc(P.cx*S,P.cy*S,Math.max(P.r*S,3),0,6.283);g.stroke();g.setLineDash([]);g.beginPath();g.arc(P.cx*S,P.cy*S,3,0,6.283);g.fill()}
+function ui(){sync();$("pgstat").innerHTML=`<div><b>${stat.n}</b><span>streamlines kept</span></div><div><b>${stat.top.toFixed(0)}%</b><span>reach the cortex</span></div><div><b>${stat.leak.toFixed(0)}%</b><span>leak out of the true bundle</span></div>`;
+$("pghint").textContent=stat.n===0?"No streamlines survived. Lower the FA threshold, widen the angle, or drag the seed onto the bright vertical band.":
+stat.top<25&&P.fa>FAx-.01?`The tract stops short at the crossing, where FA drops to about ${FAx.toFixed(2)}. A cut-short tract does not mean the fibres are absent. Lower the threshold and watch it continue.`:
+stat.leak>25?"Leakage: streamlines are escaping the true bundle (dashed outline) into the crossing bundle or into noise. Tighten the angle or raise the FA threshold.":
+"Looks believable here. Now pin this result, change one slider, and see how much the tract moves."}
+function go(){if(q)return;q=requestAnimationFrame(()=>{q=0;field();compute();draw();ui()})}
+const set=o=>{Object.assign(P,o);go()};
+$("b_strict").onclick=()=>set({fa:.35,ang:30});$("b_typ").onclick=()=>set({fa:.18,ang:45});$("b_loose").onclick=()=>set({fa:.05,ang:80});
+$("b_pin").onclick=()=>{pinned=SL.slice();draw()};$("b_unpin").onclick=()=>{pinned=[];draw()};
+$("b_cst").onclick=()=>set({cx:cxA(23),cy:23});$("b_x").onclick=()=>set({cx:cxA(14),cy:14});$("b_bg").onclick=()=>set({cx:6,cy:6});
+$("b_roll").onclick=()=>{reroll();go()};
+$("m_det").onchange=$("m_prob").onchange=()=>{P.prob=$("m_prob").checked;go()};
+["o_fa","o_dir","o_truth"].forEach(id=>$(id).onchange=()=>draw());
+function at(e){const r=cv.getBoundingClientRect();P.cx=(e.clientX-r.left)/r.width*W;P.cy=(e.clientY-r.top)/r.height*H;go()}
+cv.style.touchAction="none";cv.style.cursor="crosshair";
+cv.addEventListener("pointerdown",e=>{cv.setPointerCapture(e.pointerId);at(e);cv.onpointermove=at});cv.addEventListener("pointerup",()=>{cv.onpointermove=null});
+$("playground").addEventListener("keydown",e=>e.stopPropagation());
+reroll();go();
+})();
+
+(function(){
+const $=id=>document.getElementById(id);
+const SC={cst:[0,5,0],ex2:[0,6,0],ex3:[0,10,0]};
+function sum(){let h=0,t=0,a=0;for(const k in SC){h+=SC[k][0];t+=SC[k][1];a+=SC[k][2]}
+$("t_sum").textContent=a===0?"Score: 0 / "+t+". Work through the three exercises below.":(a<t?"Score so far: "+h+" / "+a+" answered ("+t+" questions in total).":"Final score: "+h+" / "+t+". "+(h>=t*.85?"Excellent. You have a solid grasp of the basics.":h>=t*.6?"Good. Revisit the labs for the questions you missed.":"Worth another pass through the intro and the labs, then try again."))}
+
+function quiz(id,key,items,tf){const root=$(id);
+function render(){SC[key]=[0,items.length,0];root.innerHTML="";
+items.forEach((it,i)=>{const d=document.createElement("div");d.className="qz";d.innerHTML='<p class="qq">'+(i+1)+'. '+it.q+'</p><div class="qo"></div><div class="qf" aria-live="polite"></div>';
+const o=d.querySelector(".qo"),f=d.querySelector(".qf");
+const bs=it.o.map(t=>{const b=document.createElement("button");b.textContent=t;b.style.flex=tf?"1 1 120px":"1 1 240px";o.appendChild(b);return b});
+bs.forEach((b,k)=>b.onclick=()=>{bs.forEach(x=>x.disabled=true);SC[key][2]++;
+if(k===it.a){SC[key][0]++;b.classList.add("ok");f.innerHTML="<b>Correct.</b> "+it.w}else{b.classList.add("bad");bs[it.a].classList.add("ok");f.innerHTML="<b>Not quite.</b> "+it.w}sum()});
+root.appendChild(d)});sum()}
+render();return{reset:render}}
+
+const EX2=[
+{q:"The CST stops short in oedematous tissue next to a tumour, while the same tract on the other side is long. What is the most sensible first step?",o:["Conclude the fibres are destroyed and plan the resection through that area","Lower the FA threshold a little, compare with a stricter setting, and look for leakage","Raise the FA threshold to remove noise","Seed 10 000 streamlines and trust the longest one"],a:1,w:"Oedema lowers FA, so tracking stops early even when fibres remain. Relaxing the threshold modestly, and checking several settings, shows whether the tract continues. Looser settings also invite false tracts, so confirm with other information such as stimulation mapping."},
+{q:"Streamlines seeded in the peduncle spill into the corpus callosum and the middle cerebellar peduncle. What helps most?",o:["Widen the turning angle","Switch off the FA threshold","Add exclusion ROIs at the midline and in the middle cerebellar peduncle, and tighten the angle","Set the minimum length to zero"],a:2,w:"Exclusion ROIs remove known wrong-way paths, and a stricter angle stops jumps between neighbouring bundles. Loosening settings makes leakage worse."},
+{q:"On the colour-coded map the CST appears red and the corpus callosum blue. What is the likely cause?",o:["A normal anatomical variant","Too many scan directions","Swapped or flipped gradient axes (b-vectors) during conversion","A b-value that is too high"],a:2,w:"The CST should be blue (up-down) and the corpus callosum red (left-right). Swapped axes give believable but wrong directions, so check the b-vector orientation before trusting any tract."},
+{q:"Tracts near the skull base sit about 5 mm from where they should be on the T1. What is the most likely reason?",o:["EPI distortion and imperfect registration","Too few seeds","The FA threshold was too high","The b0 image was acquired"],a:0,w:"Diffusion images are distorted near air-bone interfaces. A reverse phase-encode b0 (or a field map) and a registration check reduce this error."},
+{q:"The tract looks complete at FA 0.20 but vanishes at 0.25. What should you conclude?",o:["It is stable, so trust the FA 0.20 picture","The result is sensitive to settings, so treat it with caution and note the range","The scan has too many directions","The seed was too small"],a:1,w:"A result that changes a lot with a small threshold change is fragile. Checking several thresholds is the habit that protects you from over-reading a single image."},
+{q:"Only the medial (leg) part of the CST is tracked, and the lateral hand and face fibres are missing. Why?",o:["Hand and face fibres are not part of the tract","Crossing fibres in the corona radiata defeat a single-tensor model","The patient moved","The b-value was too low"],a:1,w:"Lateral fibres cross other bundles, where a single tensor gives a muddled direction. Multi-fibre models such as CSD, with suitable data, recover more of them."}];
+
+const EX3=[
+{q:"If a tract is missing next to a tumour, the fibres have been destroyed.",a:1,w:"Missing can mean oedema or infiltration has lowered FA and stopped tracking. Absence of a tract is not proof of absent fibres."},
+{q:"A tract that is pushed aside with normal-looking FA suggests displacement rather than invasion.",a:0,w:"That pattern is generally more favourable, but it is a hint, not proof. Confirm with other imaging and intra-operative mapping."},
+{q:"FA is highest in CSF.",a:1,w:"CSF behaves like a ball: diffusion is equal in every direction, so FA is near zero. FA is high in coherent white matter."},
+{q:"Six directions is the mathematical minimum for a tensor, but 30 or more are used in practice.",a:0,w:"Six measurements can solve the six unknowns. More directions average out noise (Lab 3)."},
+{q:"A clean-looking tract proves the fibres are functional.",a:1,w:"Tractography shows structure, not function. Stimulation mapping tests function."},
+{q:"Checking the tract at stricter and looser thresholds helps judge how reliable it is.",a:0,w:"If the tract changes a lot, trust it less. This is exactly what the playground and its pin button are for."},
+{q:"A standard single-tensor model handles crossing fibres well.",a:1,w:"A single tensor gives one direction per voxel, so crossings are averaged into a muddled direction. CSD and other multi-fibre models do better."},
+{q:"If stimulation mapping and tractography disagree, trust the tractography.",a:1,w:"Direct electrical stimulation is the reference standard. Trust it over tractography."},
+{q:"Brain shift after craniotomy can make pre-operative tracts less accurate.",a:0,w:"The brain moves once the skull is opened, so pre-operative tracts may no longer line up with the anatomy."},
+{q:"On the colour-coded map, blue means left-right.",a:1,w:"Blue is up-down (superior-inferior), red is left-right and green is front-back."}].map(x=>({q:x.q,o:["True","False"],a:x.a,w:x.w}));
+
+const q2=quiz("ex2","ex2",EX2,false),q3=quiz("ex3","ex3",EX3,true);
+
+/* Exercise 1: axial slices */
+const cv=$("cst_c"),g=cv.getContext("2d"),CX=300,CY=205,BG="#fbfbf8";
+const GM="#e6d9c8",WM="#f3ede3",EDGE="#8a7a68",CSF="#cfe3f3",CSFE="#7fa8c9",NUC="#cdbfae",TAN="#eadfcb",TANE="#b5a58d",RED="#d9776a";
+let showL=true;
+const X=v=>CX+v,Y=v=>CY+v,sd=f=>{f(-1);f(1)};
+function ell(x,y,rx,ry,rot,fill,stroke,lw){g.beginPath();g.ellipse(X(x),Y(y),rx,ry,rot||0,0,6.283);if(fill){g.fillStyle=fill;g.fill()}if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1.5;g.stroke()}}
+function poly(p,fill,stroke,lw,closed){g.beginPath();p.forEach((q,i)=>i?g.lineTo(X(q[0]),Y(q[1])):g.moveTo(X(q[0]),Y(q[1])));if(closed!==false)g.closePath();if(fill){g.fillStyle=fill;g.fill()}if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1.5;g.lineJoin="round";g.lineCap="round";g.stroke()}}
+function lab(t,side,dy,px,py){if(!showL)return;g.font="14px system-ui,sans-serif";g.fillStyle="#555";g.textAlign=side>0?"left":"right";
+const tx=side>0?478:122,ls=t.split("\n"),y0=Y(dy)-(ls.length-1)*8;ls.forEach((l,i)=>g.fillText(l,tx,y0+i*16+5));
+g.strokeStyle="#aaa";g.lineWidth=1;g.beginPath();g.moveTo(tx+(side>0?-6:6),Y(dy));g.lineTo(X(px),Y(py));g.stroke()}
+function brain(){ell(0,0,142,172,0,GM,EDGE,3);ell(0,0,122,152,0,WM);poly([[0,-168],[0,168]],null,EDGE,2,false)}
+
+const D=[
+function(){brain();
+sd(s=>{poly([[s*22,-19],[s*58,-38],[s*92,-72],[s*114,-94],[s*114,-70],[s*92,-48],[s*58,-14],[s*22,5]],"rgba(190,170,140,.35)");
+poly([[s*22,5],[s*58,-14],[s*92,-48],[s*114,-70]],null,"#6b5b4a",3,false);
+ell(s*20,-5,8,36,s*.08,CSF,CSFE,1.5)});
+lab("Precentral\ngyrus",1,-118,100,-69);lab("Central\nsulcus",1,-40,92,-48);lab("Lateral\nventricle",-1,-30,-20,-20)},
+function(){brain();
+sd(s=>{ell(s*14,-96,9,26,s*.15,CSF,CSFE,1.5);ell(s*38,-70,17,28,s*-.1,NUC,"#a89884",1.5);ell(s*34,18,24,40,0,NUC,"#a89884",1.5);
+poly([[s*72,-74],[s*112,-30],[s*118,20],[s*104,48],[s*66,-14],[s*64,-50]],"#bfae9a","#a89884",1.5);
+poly([[s*60,-88],[s*48,-30],[s*92,55]],null,"rgba(250,246,238,.9)",15,false)});
+ell(0,12,3,34,0,CSF,CSFE,1);
+lab("Caudate head",1,-110,52,-78);lab("Lentiform\nnucleus",1,-20,114,-14);lab("Thalamus",-1,60,-40,30);lab("Anterior limb",-1,-60,-55,-62);lab("Genu",-1,-10,-48,-30)},
+function(){ell(0,0,150,120,0,"#efe7dc","#cdbfae",2);ell(0,0,92,78,0,"#e3d6c3",EDGE,3);ell(0,-76,15,15,0,"#efe7dc");
+sd(s=>{ell(s*58,-26,28,44,s*.45,TAN,TANE,2);ell(s*44,6,20,7,s*.45,"#6d5a48");ell(s*20,2,12,12,0,RED,"#b85a50",1.5);ell(s*22,62,20,13,0,"#d6c9b5",TANE,1.5)});
+ell(0,36,5,5,0,CSF,CSFE,1.5);
+lab("Interpeduncular\nfossa",-1,-100,-6,-70);lab("Substantia\nnigra",-1,10,-46,8);lab("Red nucleus",1,10,26,3);lab("Cerebral\naqueduct",1,60,5,36);lab("Superior\ncolliculus",-1,70,-24,62)},
+function(){sd(s=>{ell(s*88,112,56,52,s*.2,"#e9e0d4",TANE,1.5);ell(s*98,30,16,36,s*-.4,"#d6c9b5",TANE,1.5)});
+ell(0,-30,92,62,0,"#e8dccb",EDGE,3);ell(0,44,72,34,0,"#dcd0be",EDGE,2);
+[-62,-48,-34,-20,-6].forEach(yy=>{const hw=92*Math.sqrt(1-Math.pow((yy+30)/62,2))-8;poly([[-hw,yy],[hw,yy]],null,"rgba(120,100,80,.3)",1.5,false)});
+poly([[-12,70],[12,70],[0,52]],CSF,CSFE,1.5);ell(0,-100,6,6,0,RED,"#b85a50",1.5);
+lab("Basilar artery",1,-110,6,-100);lab("Fourth\nventricle",1,70,10,66);lab("Middle\ncerebellar\npeduncle",1,20,104,28);lab("Cerebellar\nhemisphere",-1,110,-100,112)},
+function(){sd(s=>{ell(s*58,92,48,40,0,"#e9e0d4",TANE,1.5)});ell(0,0,78,70,0,"#e8dccb",EDGE,3);
+sd(s=>{ell(s*20,-36,17,30,s*.05,TAN,TANE,2);ell(s*56,-8,18,28,s*.25,"#cbbba6","#a89884",1.5);ell(s*14,50,14,14,0,"#d6c9b5",TANE,1.5);ell(s*38,44,13,12,0,"#d6c9b5",TANE,1.5)});
+poly([[0,-70],[0,-34]],null,EDGE,2,false);ell(0,22,4,4,0,CSF,CSFE,1.5);
+lab("Olive",1,-5,64,-10);lab("Central canal",1,40,4,22);lab("Posterior\ncolumns",-1,70,-20,52);lab("Cerebellar\ntonsil",1,110,60,100)}];
+
+const NM=["1 · Cortex","2 · Capsule","3 · Midbrain","4 · Pons","5 · Medulla"];
+const L=[
+{h:"Level 1 of 5: high axial slice (corona radiata level).",t:[[62,-30]],r:22,w:"At this level the fibres run in the deep white matter of the precentral gyrus, just in front of the central sulcus. Across the convexity, leg fibres lie medially, hand fibres in the middle and face fibres laterally."},
+{h:"Level 2 of 5: slice through the basal ganglia (internal capsule level).",t:[[66,4]],r:17,w:"The CST runs in the posterior limb of the internal capsule, behind the genu and between the thalamus and the lentiform nucleus. The fibres are packed tightly here, so a small lesion can cause a dense hemiparesis. The finer arrangement inside the capsule is still debated."},
+{h:"Level 3 of 5: midbrain.",t:[[56,-26]],r:17,w:"The CST lies in the cerebral peduncle (crus cerebri), the ventral part of the midbrain, in its middle part. Frontopontine fibres run medial to it and temporo-parieto-occipito-pontine fibres lateral to it."},
+{h:"Level 4 of 5: pons.",t:[[32,-36]],r:20,w:"In the basis pontis, the ventral pons in front of the tegmentum, the CST breaks into bundles scattered among the transverse pontine fibres."},
+{h:"Level 5 of 5: medulla.",t:[[20,-36]],r:17,w:"The CST forms the medullary pyramids, either side of the anterior median fissure. Most fibres then cross at the pyramidal decussation at the lower end of the medulla to form the lateral corticospinal tract."}];
+
+let cur=0,st=[];
+const fresh=()=>{st=L.map(()=>({d:0,hit:0,px:0,py:0}))};
+function recalc(){let h=0,a=0;st.forEach(s=>{if(s.d){a++;h+=s.hit}});SC.cst=[h,5,a];sum()}
+function draw(){g.fillStyle=BG;g.fillRect(0,0,600,420);D[cur]();g.font="bold 12px system-ui,sans-serif";g.fillStyle="#999";g.textAlign="center";g.fillText("FRONT",CX,14);g.fillText("BACK",CX,414);
+const s=st[cur],l=L[cur];
+if(s.d){l.t.forEach(p=>[-1,1].forEach(m=>{g.beginPath();g.arc(X(m*p[0]),Y(p[1]),l.r,0,6.283);g.fillStyle="rgba(44,160,44,.22)";g.fill();g.setLineDash([5,4]);g.strokeStyle="#2ca02c";g.lineWidth=2.5;g.stroke();g.setLineDash([])}));
+if(s.px!==null){g.beginPath();g.arc(X(s.px),Y(s.py),7,0,6.283);g.fillStyle=s.hit?"#2ca02c":"#d62728";g.fill();g.strokeStyle="#fff";g.lineWidth=2;g.stroke()}}}
+function ui(){const t=$("cst_tabs");t.innerHTML="";
+NM.forEach((n,i)=>{const b=document.createElement("button");b.textContent=n;b.className=(i===cur?"on ":"")+(st[i].d?(st[i].hit?"hit":"miss"):"");b.onclick=()=>{cur=i;ui()};t.appendChild(b)});
+draw();const s=st[cur],l=L[cur];
+$("cst_msg").innerHTML=s.d?"<b>"+(s.hit?"Correct.":(s.px===null?"Answer revealed.":"Not quite."))+"</b> The green circles show where the tract runs. "+l.w:"<b>"+l.h+"</b> Click where the corticospinal tract runs. It is on both sides, so either side counts."}
+cv.addEventListener("pointerdown",e=>{const s=st[cur];if(s.d)return;const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*cv.width/r.width-CX,y=(e.clientY-r.top)*cv.height/r.height-CY,l=L[cur];
+let m=1e9;l.t.forEach(p=>[-1,1].forEach(q=>{m=Math.min(m,Math.hypot(x-q*p[0],y-p[1]))}));
+s.d=1;s.hit=m<=l.r?1:0;s.px=x;s.py=y;recalc();ui()});
+$("cst_rev").onclick=()=>{const s=st[cur];if(!s.d){s.d=1;s.hit=0;s.px=null;recalc();ui()}};
+$("cst_retry").onclick=()=>{st[cur]={d:0,hit:0,px:0,py:0};recalc();ui()};
+function cstReset(){fresh();cur=0;recalc();ui()}
+$("cst_all").onclick=cstReset;
+$("cst_lab").onchange=e=>{showL=e.target.checked;draw()};
+$("t_reset").onclick=()=>{q2.reset();q3.reset();cstReset()};
+cstReset();
+})();
+
+</script>
+</body>
+</html>
