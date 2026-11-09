@@ -52,4 +52,4 @@ These labs let you ***change the settings yourself*** and watch what happens, so
 
 ## 📜 ***Licence***
 
-*Free for educational use. Please credit the author when sharing.*
+© Hrishikesh Sarkar, all rights reserved
